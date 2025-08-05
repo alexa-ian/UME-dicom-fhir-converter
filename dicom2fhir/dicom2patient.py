@@ -3,6 +3,7 @@
 import re
 import datetime
 import uuid
+import json
 from typing import Union
 from pydicom.valuerep import PersonName
 from fhir.resources.R4B.patient import Patient
@@ -24,6 +25,14 @@ def dicom_name_to_fhir(name: str) -> HumanName:
 
     DICOM name format: 'Family^Given^Middle^Prefix^Suffix'
     """
+    # Check if the name is JSON-encoded
+    if name.strip().startswith('{') and 'Alphabetic' in name:
+        try:
+            name_dict = json.loads(name)
+            name = name_dict.get("Alphabetic", name)
+        except json.JSONDecodeError:
+            pass  # Fallback to original string if decoding fails
+
     pname = PersonName(name)
     if pname is None:
         return HumanName.model_construct()
